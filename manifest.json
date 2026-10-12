@@ -1,0 +1,17 @@
+{
+	"schemaVersion": 1,
+	"id": "io.github.soham3301.port-watcher",
+	"name": "Port Watcher",
+	"version": "1.0.0",
+	"author": "Soham Datta",
+	"license": "MIT",
+	"description": "A tiny security monitor for the Omarchy bar: watches established TCP/UDP connections, new remote IPs, new listeners and suspicious processes.",
+	"kinds": ["bar-widget"],
+	"entryPoints": { "barWidget": "BarWidget.qml" },
+	"barWidget": {
+		"displayName": "Port Watcher",
+		"category": "System",
+		"allowMultiple": false,
+		"defaultSection": "left"
+	}
+}

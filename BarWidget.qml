@@ -8,7 +8,10 @@ BarWidget {
   id: root
   moduleName: "io.github.soham3301.port-watcher"
 
-  property alias engine: eng
+  // Omarchy owns one service instance for this plugin, shared by every bar.
+  readonly property var eng: root.bar && root.bar.shell
+    ? root.bar.shell.serviceFor(root.moduleName) : null
+  readonly property var engine: eng
 
   readonly property bool opened: panelLoader.item
     ? panelLoader.item.opened === true
@@ -63,9 +66,7 @@ BarWidget {
   readonly property color cRed: "#ff3b3b"
   function dotColor(s) { return s === "r" ? cRed : (s === "y" ? cYellow : cGreen) }
   readonly property color sysText: root.bar ? root.bar.foreground : Color.foreground
-  readonly property color textColor: eng.status === "r" ? cRed : (eng.systemText ? sysText : cGreen)
-
-  PortEngine { id: eng }
+  readonly property color textColor: eng && eng.status === "r" ? cRed : (eng && eng.systemText ? sysText : cGreen)
 
   Loader {
     id: panelLoader
@@ -127,7 +128,7 @@ BarWidget {
   }
 
   function advance(dt) {
-    var ds = eng.dots
+    var ds = eng ? eng.dots : []
     var L = perimLen(face.width, face.height, face.radius)
     for (var i = 0; i < ds.length; i++) {
       var k = ds[i].key
@@ -147,7 +148,7 @@ BarWidget {
   // ---- blinking light: slow = safe, medium = suspicious, fast = threat
   property bool blinkOn: true
   Timer {
-    interval: eng.status === "r" ? 80 : (eng.status === "y" ? 250 : 500)
+    interval: eng && eng.status === "r" ? 80 : (eng && eng.status === "y" ? 250 : 500)
     repeat: true
     running: root.visible
     onTriggered: root.blinkOn = !root.blinkOn
@@ -161,7 +162,7 @@ BarWidget {
   property bool curOn: true
 
   function loadLine() {
-    chunks = D.chunkify(eng.nextLine(), 25)
+    chunks = D.chunkify((eng ? eng.nextLine() : []), 25)
     ci = 0
   }
 
@@ -174,7 +175,7 @@ BarWidget {
   }
 
   function stepTyping() {
-    var s = eng.status
+    var s = eng ? eng.status : "g"
     var sp = s === "r" ? 12 : (s === "y" ? 24 : 42)
     if (chunks.length === 0) loadLine()
     var target = chunks[ci] || ""
@@ -206,7 +207,7 @@ BarWidget {
     id: typer
     interval: 500
     repeat: true
-    running: eng.stateReady && root.visible
+    running: !!eng && eng.stateReady && root.visible
     onTriggered: root.stepTyping()
   }
 
@@ -233,14 +234,14 @@ BarWidget {
       id: face
       anchors.fill: parent
       radius: 8
-      color: eng.transparentBg ? "transparent" : "#000000"
+      color: eng && eng.transparentBg ? "transparent" : "#000000"
       border.width: 1
-      border.color: Qt.rgba(root.dotColor(eng.status).r, root.dotColor(eng.status).g,
-                            root.dotColor(eng.status).b, 0.45)
+      border.color: Qt.rgba(root.dotColor(eng ? eng.status : "g").r, root.dotColor(eng ? eng.status : "g").g,
+                            root.dotColor(eng ? eng.status : "g").b, 0.45)
     }
 
     Repeater {
-      model: eng.dots
+      model: eng ? eng.dots : []
       delegate: Item {
         id: dd
         required property var modelData
@@ -296,7 +297,7 @@ BarWidget {
       anchors.right: parent.right
       anchors.rightMargin: 9
       anchors.verticalCenter: parent.verticalCenter
-      color: root.dotColor(eng.status)
+      color: root.dotColor(eng ? eng.status : "g")
       opacity: root.blinkOn ? 1 : 0.15
     }
   }

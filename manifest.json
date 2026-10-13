@@ -6,8 +6,8 @@
 	"author": "Soham Datta",
 	"license": "MIT",
 	"description": "A tiny security monitor for the Omarchy bar: watches established TCP/UDP connections, new remote IPs, new listeners and suspicious processes.",
-	"kinds": ["bar-widget"],
-	"entryPoints": { "barWidget": "BarWidget.qml" },
+	"kinds": ["bar-widget", "service"],
+	"entryPoints": { "barWidget": "BarWidget.qml", "service": "PortEngine.qml" },
 	"barWidget": {
 		"displayName": "Port Watcher",
 		"category": "System",

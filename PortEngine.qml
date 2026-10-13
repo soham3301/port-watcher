@@ -4,6 +4,7 @@ import Quickshell.Io
 import "Detector.js" as D
 
 // Port Watcher engine: polls `ss`, applies the detection rules, keeps state on disk.
+// Loaded once as the plugin service; all monitor widgets share this engine.
 // Runs only fixed commands (ss, ls, mkdir). No shell, no sudo, no network access.
 Item {
   id: eng
@@ -442,6 +443,7 @@ Item {
     st.safe[key] = 1;
     st.known[key] = 1;
     st.dirty = true;
+    save();
     publish();
     interrupt();
   }
@@ -454,6 +456,7 @@ Item {
       pid: p && p.pids.length ? p.pids[0] : "", since: Date.now()
     };
     st.dirty = true;
+    save();
     publish();
     interrupt();
   }

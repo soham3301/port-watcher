@@ -76,7 +76,7 @@ On the very first run the plugin learns what is already running as a silent base
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/soham3301/omarchy-port-watcher.git --enable
+omarchy plugin add https://github.com/soham3301/port-watcher.git --enable
 ```
 
 The manifest declares the left bar section as the default. To put it somewhere else:

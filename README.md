@@ -10,7 +10,7 @@ It exists to make two situations easier to notice: a backdoor on your machine, a
 
 **Bar display (210px, left section by default)**
 
-- A rounded border with small glowing dots travelling around it: one dot per process name. A process with more local ports moves faster. Red dots pulse.
+- A rounded border with small glowing dots travelling around it: one dot per process name. A dot is green and slow for up to 5 remote IPs, yellow and one step faster for more than 5, and red, pulsing and faster still for more than 50. A suspicious (yellow) or threat (red) process always gets a yellow or red dot. The dots are spaced evenly around the border.
 - A terminal-style line (`> text_`) that types, backspaces and types again: process lines, counts of listening, established and unconnected ports, new remote IPs, unknown processes and warnings.
 - A blinking light on the right: green (slow) = safe, yellow (faster) = suspicious, red (rapid) = threat.
 - During a threat the display is locked: red text alternating `INSPECT THE THREAT - PID n` with the threat details, until you neutralize it.
@@ -21,7 +21,7 @@ It exists to make two situations easier to notice: a backdoor on your machine, a
 - **Threat area:** shows scrollable red threat cards when something is wrong, and a few witty typed lines when everything is quiet.
 - **Process cards:** threats are drawn larger than suspicious ones, which are larger than safe ones. Select a card to see its details, with **Mark safe** and **Mark threat** buttons.
 - **Network log:** new remote IPs on top (newest first, last 300 shown), port numbers by state (listening, established, unconnected) below.
-- **Bar display toggles:** a transparent background (default is black) and system text color (default is green). These change only the bar display, not the popup.
+- **Bar display toggles:** a transparent background (default is black), system text color (default is green) and no border (hides the border line while the dots keep flowing). These change only the bar display, not the popup.
 
 The popup takes its colors from the Omarchy theme (accent, background and urgent colors). Suspicious items stay yellow, because themes don't define a yellow.
 
@@ -67,20 +67,37 @@ Marking a process safe silences the red and yellow rules tied to it. The general
 
 On the very first run the plugin learns what is already running as a silent baseline, so you do not start with a wall of red.
 
+## Requirements
+
+- Omarchy 4 (Quattro) with the Quickshell-based shell
+- `ss` (from iproute2) and `ls` (from coreutils), both part of a standard Omarchy install
+- No other dependencies. The plugin never uses sudo and never writes to your Omarchy configuration; it only writes its own state file (see below).
+
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/soham3301/port-watcher.git
-omarchy plugin enable io.github.soham3301.port-watcher --section left
+omarchy plugin add https://github.com/soham3301/omarchy-port-watcher.git --enable
 ```
 
-New plugins are added disabled so you can read the source first. `--section` can be `left`, `center` or `right`.
+The manifest declares the left bar section as the default. To put it somewhere else:
+
+```sh
+omarchy plugin enable io.github.soham3301.port-watcher --section center
+```
+
+`--section` can be `left`, `center` or `right`. Leave out `--enable` to add the plugin disabled so you can read the source first, then enable it later with the command above.
 
 For a manual install, copy this folder to `~/.config/omarchy/plugins/io.github.soham3301.port-watcher/`, then run:
 
 ```sh
 omarchy-shell shell rescanPlugins
-omarchy plugin enable io.github.soham3301.port-watcher --section left
+omarchy plugin enable io.github.soham3301.port-watcher
+```
+
+## Update
+
+```sh
+omarchy plugin update io.github.soham3301.port-watcher
 ```
 
 ## Remove
@@ -89,6 +106,14 @@ omarchy plugin enable io.github.soham3301.port-watcher --section left
 omarchy plugin remove io.github.soham3301.port-watcher
 ```
 
+Removing the plugin deletes its folder but not the data it saved. To wipe that too:
+
+```sh
+rm -rf ~/.local/state/io.github.soham3301.port-watcher
+```
+
+If an entry for the plugin is still listed in `~/.config/omarchy/shell.json`, delete it by hand.
+
 ## What it runs and stores
 
 - Runs `ss -H -tupani` every 2 seconds, and `ls -l -- /proc/<pid>/exe` for newly seen PIDs (PIDs are checked to be digits only). It also runs `mkdir -p` once to create its state folder. All commands use fixed argument lists: no shell, no sudo, no network access of its own.
@@ -96,7 +121,7 @@ omarchy plugin remove io.github.soham3301.port-watcher
     - the safe list and known process names
     - seen remote IPs, capped at 5000 (once full, each new IP is logged and the oldest are dropped; an IP that was dropped counts as new if it appears again)
     - known listening ports and known remote ports
-    - the two bar display toggles
+    - the three bar display toggles
 - Delete that file to reset everything.
 - Like every Omarchy plugin, it runs unsandboxed inside `omarchy-shell`. Read the source before enabling it.
 

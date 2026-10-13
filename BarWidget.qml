@@ -96,8 +96,13 @@ BarWidget {
     }
   }
 
-  // ---- orbiting dots: one per process name, speed grows with its local port count
+  // ---- orbiting dots: one per process name.
+  // Level 0 (green, slow): up to 5 remote IPs. Level 1 (yellow, faster): over 5 IPs or a
+  // suspicious process. Level 2 (red, pulsing, fastest): over 50 IPs or a threat process.
+  readonly property var levelSpeed: [28, 46, 72]
   property var phases: ({})
+  property var adj: ({})
+  property string lastSig: ""
   property int tick: 0
 
   function perimLen(w, h, r) {
@@ -126,16 +131,61 @@ BarWidget {
     return { x: r + r * Math.cos(d), y: r + r * Math.sin(d) }
   }
 
+  // Called whenever the set of dots changes: new dots start at their slot of an
+  // equal split of the border, and the existing dots ease to equal gaps.
+  function syncDots() {
+    var ds = eng.dots, keys = [], i
+    for (i = 0; i < ds.length; i++) keys.push(ds[i].key)
+    var sig = keys.slice().sort().join("|")
+    if (sig === lastSig) return
+    lastSig = sig
+    var L = perimLen(face.width, face.height, face.radius)
+    var alive = [], fresh = []
+    for (i = 0; i < keys.length; i++) {
+      if (phases[keys[i]] !== undefined) alive.push(keys[i])
+      else fresh.push(keys[i])
+    }
+    for (var k in phases) {
+      if (keys.indexOf(k) < 0) { delete phases[k]; delete adj[k] }
+    }
+    alive.sort(function (x, y) { return phases[x] - phases[y] })
+    var order = alive.concat(fresh)
+    var n = order.length
+    if (n === 0) return
+    var anchor = alive.length > 0 ? phases[alive[0]] : Math.random() * L
+    for (i = 0; i < n; i++) {
+      var target = (anchor + i * L / n) % L
+      var key = order[i]
+      if (phases[key] === undefined) {
+        phases[key] = target
+        adj[key] = 0
+      } else {
+        var dd2 = target - phases[key]
+        dd2 = ((dd2 + L / 2) % L + L) % L - L / 2
+        adj[key] = dd2
+      }
+    }
+  }
+
   function advance(dt) {
     var ds = eng.dots
     var L = perimLen(face.width, face.height, face.radius)
     for (var i = 0; i < ds.length; i++) {
       var k = ds[i].key
       if (phases[k] === undefined) phases[k] = Math.random() * L
-      phases[k] = (phases[k] + ds[i].speed * dt) % L
+      var a = adj[k] || 0
+      var move = levelSpeed[ds[i].level] * dt
+      if (a !== 0) {
+        var s = Math.abs(a) < 0.3 ? a : a * Math.min(1, dt * 4)
+        move += s
+        adj[k] = a - s
+      }
+      phases[k] = ((phases[k] + move) % L + L) % L
     }
     tick++
   }
+
+  Component.onCompleted: syncDots()
 
   Timer {
     interval: 33
@@ -220,9 +270,10 @@ BarWidget {
   Connections {
     target: eng
     function onInterrupt() { root.restartTyping() }
+    function onDotsChanged() { root.syncDots() }
   }
 
-      // ---- the display
+  // ---- the display
   Item {
     id: disp
     anchors.centerIn: parent
@@ -235,8 +286,10 @@ BarWidget {
       radius: 8
       color: eng.transparentBg ? "transparent" : "#000000"
       border.width: 1
-      border.color: Qt.rgba(root.dotColor(eng.status).r, root.dotColor(eng.status).g,
-                            root.dotColor(eng.status).b, 0.45)
+      // "no border" only hides the line; the geometry stays, so the dots keep their track
+      border.color: eng.noBorder ? "transparent"
+                                 : Qt.rgba(root.dotColor(eng.status).r, root.dotColor(eng.status).g,
+                                           root.dotColor(eng.status).b, 0.45)
     }
 
     Repeater {
@@ -244,11 +297,13 @@ BarWidget {
       delegate: Item {
         id: dd
         required property var modelData
+        readonly property color col: modelData.level >= 2 ? root.cRed
+                                   : (modelData.level === 1 ? root.cYellow : root.cGreen)
         readonly property var pt: {
           root.tick
           return root.perimPoint(root.phases[modelData.key] || 0, face.width, face.height, face.radius)
         }
-        readonly property real pulse: modelData.status === "r" ? 1 + 0.5 * Math.sin(root.tick * 0.3) : 1
+        readonly property real pulse: modelData.level >= 2 ? 1 + 0.5 * Math.sin(root.tick * 0.3) : 1
         width: 3 * pulse
         height: width
         x: pt.x - width / 2
@@ -258,13 +313,13 @@ BarWidget {
           width: parent.width * 2.2
           height: width
           radius: width / 2
-          color: root.dotColor(dd.modelData.status)
+          color: dd.col
           opacity: 0.2
         }
         Rectangle {
           anchors.fill: parent
           radius: width / 2
-          color: root.dotColor(dd.modelData.status)
+          color: dd.col
         }
       }
     }

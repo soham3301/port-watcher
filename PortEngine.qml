@@ -24,6 +24,7 @@ Item {
   property int rev: 0
   property bool transparentBg: false
   property bool systemText: false
+  property bool noBorder: false
   property bool stateReady: false
   signal interrupt()
 
@@ -68,6 +69,7 @@ Item {
         st.listeners = o.listeners || {};
         transparentBg = o.transparent === true;
         systemText = o.systemText === true;
+        noBorder = o.noBorder === true;
         st.rports = o.rports || {};
         ok = true;
       }
@@ -81,7 +83,7 @@ Item {
     st.dirty = false;
     fv.setText(JSON.stringify({
       v: 1, known: st.known, safe: st.safe, ips: st.ips, listeners: st.listeners,
-      rports: st.rports, transparent: transparentBg, systemText: systemText
+      rports: st.rports, transparent: transparentBg, systemText: systemText, noBorder: noBorder
     }));
   }
 
@@ -89,6 +91,7 @@ Item {
 
   function setTransparent(v) { transparentBg = v; st.dirty = true; rev++; }
   function setSystemText(v) { systemText = v; st.dirty = true; rev++; }
+  function setNoBorder(v) { noBorder = v; st.dirty = true; rev++; }
 
   // ---------------------------------------------------------------- polling
   Process {
@@ -397,8 +400,11 @@ Item {
     threats = th;
 
     var d = [];
-    for (var i = 0; i < pl.length && i < 10; i++)
-      d.push({ key: pl[i].key, status: pl[i].status, speed: 30 + 25 * pl[i].nPorts });
+    for (var i = 0; i < pl.length && i < 10; i++) {
+      var sl = pl[i].status === "r" ? 2 : (pl[i].status === "y" ? 1 : 0);
+      var il = pl[i].nIps > 50 ? 2 : (pl[i].nIps > 5 ? 1 : 0);
+      d.push({ key: pl[i].key, level: Math.max(sl, il) });
+    }
     dots = d;
 
     if (st.ipsDirty) {

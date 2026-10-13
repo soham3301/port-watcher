@@ -205,7 +205,7 @@ Panel {
           spacing: 6
           Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: "bar display:"
+            text: "bar:"
             color: root.dim(root.fg, 0.7)
             font.family: "monospace"
             font.pixelSize: 10
@@ -216,9 +216,14 @@ Panel {
             onClicked: if (root.eng) root.eng.setTransparent(!root.eng.transparentBg)
           }
           PwBtn {
-            label: (root.eng && root.eng.systemText ? "[x] " : "[ ] ") + "system text color"
+            label: (root.eng && root.eng.systemText ? "[x] " : "[ ] ") + "system text"
             tone: root.accent
             onClicked: if (root.eng) root.eng.setSystemText(!root.eng.systemText)
+          }
+          PwBtn {
+            label: (root.eng && root.eng.noBorder ? "[x] " : "[ ] ") + "no border"
+            tone: root.accent
+            onClicked: if (root.eng) root.eng.setNoBorder(!root.eng.noBorder)
           }
         }
 

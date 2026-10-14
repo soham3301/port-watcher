@@ -36,7 +36,7 @@ Item {
   property var st: ({
     first: true, scans: 0, known: {}, safe: {}, ips: {}, listeners: {}, flagged: {},
     yellowUntil: {}, exe: {}, newIpTimes: {}, fanAt: {}, lps: {}, sentPrev: {},
-    prevPresent: {}, app: {}, beaconed: {}, recentEv: {}, events: [], sess: {},
+    prevPresent: {}, app: {}, beaconed: {}, recentEv: {}, events: [],
     per: {}, ri: 0, alt: 0, ti: 0, dirty: false, ipsDirty: true,
     rports: {}, prevHigh: {}, portWarnAt: {}, notices: [], ni: 0, m10: 0, m50: 0, connHist: [], surgeAt: 0
   })
@@ -163,7 +163,7 @@ Item {
     var base = st.first;          // very first run: learn the baseline silently
     var warm = st.scans > 0;      // session-only memories need one scan to fill
     var per = {}, est = [], lis = [], con = [];
-    var newIps = {}, presentNow = {}, connNow = {}, lookups = [], highNow = {};
+    var newIps = {}, presentNow = {}, connNow = [], lookups = [], highNow = {};
     var learnPorts = base || Object.keys(st.rports).length === 0;
     var i, k, r;
 
@@ -186,7 +186,6 @@ Item {
       p.rports[r.rport] = 1;
       p.ips[r.rip] = 1;
       if (r.pid) p.pids[r.pid] = 1;
-      st.sess[r.rip] = 1;
 
       // RED: new process name
       if (!st.known[key] && !st.safe[key]) {
@@ -366,7 +365,7 @@ Item {
     connCount = est.length;
     listenCount = Object.keys(pl).length;
     unconCount = Object.keys(pu).length;
-    uniqueIps = Object.keys(st.sess).length;
+    uniqueIps = Object.keys(st.ips).length;
     var h = hist.slice();
     h.push(est.length);
     if (h.length > 30) h.shift();
